@@ -1,0 +1,91 @@
+# =============================================================================
+# docker-compose.yml — Local development environment
+# =============================================================================
+
+version: "3.9"
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ish_db}
+      POSTGRES_USER: ${POSTGRES_USER:-ish_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ish_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      # -d ish_db is critical: without it pg_isready tries to connect to a DB
+      # named after the user ("ish_user"), which doesn't exist => always unhealthy
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ish_user} -d ${POSTGRES_DB:-ish_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # Override entrypoint — Docker healthcheck already guarantees DB is up
+    entrypoint: ["sh", "-c"]
+    command: >
+      "python manage.py migrate --noinput &&
+       python manage.py collectstatic --noinput --clear &&
+       python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DATABASE_URL: postgres://${POSTGRES_USER:-ish_user}:${POSTGRES_PASSWORD:-ish_password}@db:5432/${POSTGRES_DB:-ish_db}
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-secret-key-change-in-production}
+      LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN:-}
+      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    entrypoint: ["sh", "-c"]
+    command: "celery -A config worker --loglevel=info"
+    volumes:
+      - ./backend:/app
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DATABASE_URL: postgres://${POSTGRES_USER:-ish_user}:${POSTGRES_PASSWORD:-ish_password}@db:5432/${POSTGRES_DB:-ish_db}
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-secret-key-change-in-production}
+      LINE_CHANNEL_ACCESS_TOKEN: ${LINE_CHANNEL_ACCESS_TOKEN:-}
+      LINE_CHANNEL_SECRET: ${LINE_CHANNEL_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
