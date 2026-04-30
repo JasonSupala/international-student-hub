@@ -254,21 +254,21 @@ international-student-hub/
 
 ## 🗺️ Roadmap
 
-### ✅ Phase 1 — MVP (Weeks 1–8)
+### ✅ Phase 1 
 - JWT auth + user profiles
 - Arrival checklist with progress tracking
 - Service directory with search
 - LINE Bot FAQ
 - React frontend deployed
 
-### 🔄 Phase 2 — Growth (Weeks 9–14)
+### 🔄 Phase 2 
 - Community Q&A board
 - Google Maps on directory entries
 - Google Sheets checklist export
 - International student events board
 
 ### 🎯 Stretch Goals
-- AI-powered LINE Bot (Claude API answers)
+- AI-powered LINE Bot
 - React Native mobile app
 - Multi-language UI (Bahasa, Vietnamese, Japanese)
 - Buddy matching system
