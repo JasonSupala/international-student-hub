@@ -17,7 +17,15 @@ env = environ.Env()
 DEBUG = False
 
 # Railway/Render inject the public hostname as an env var
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[
+    "international-student-hub-production.up.railway.app",
+    ".up.railway.app",
+    "localhost",
+    "127.0.0.1",
+])
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Force HTTPS
 SECURE_SSL_REDIRECT = True
