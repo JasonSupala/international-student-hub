@@ -1,15 +1,27 @@
 #!/bin/sh
-# entrypoint.sh — Run migrations then start the server
-# This script runs every time the container starts.
-
-set -e  # Exit immediately if any command fails
+# entrypoint.sh — Wait for PostgreSQL, run migrations, start server
+set -e
 
 echo "==> Waiting for PostgreSQL to be ready..."
-# Use pg_isready (comes with libpq-dev) — much lighter than loading Django
-until pg_isready -h "${PGHOST:-db}" -p "${PGPORT:-5432}" -U "${PGUSER:-ish_user}" -d "${PGDATABASE:-ish_db}" > /dev/null 2>&1; do
+
+# Pure Python DB check — works without psql client binary installed
+until python -c "
+import os, sys
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', os.environ.get('DJANGO_SETTINGS_MODULE', 'config.settings.prod'))
+import django
+django.setup()
+from django.db import connection
+try:
+    connection.ensure_connection()
+    sys.exit(0)
+except Exception as e:
+    print(f'Not ready: {e}', flush=True)
+    sys.exit(1)
+" 2>/dev/null; do
     echo "    PostgreSQL not ready yet, retrying in 2s..."
     sleep 2
 done
+
 echo "    PostgreSQL is ready ✓"
 
 echo "==> Running database migrations..."
@@ -19,9 +31,8 @@ echo "==> Collecting static files..."
 python manage.py collectstatic --noinput
 
 echo "==> Starting Gunicorn..."
-# Use gunicorn in production; Django's runserver in development (overridden by docker-compose)
 exec gunicorn config.wsgi:application \
-    --bind 0.0.0.0:8000 \
+    --bind 0.0.0.0:${PORT:-8000} \
     --workers 2 \
     --timeout 120 \
     --access-logfile - \
