@@ -62,7 +62,11 @@ export default function Navbar() {
                 aria-haspopup="menu"
                 aria-expanded={profileOpen}
               >
-                {user.username.charAt(0).toUpperCase()}
+                {user.profile?.avatar ? (
+                  <img src={user.profile.avatar} alt={`${user.username}'s avatar`} />
+                ) : (
+                  user.username.charAt(0).toUpperCase()
+                )}
               </button>
               {profileOpen && (
                 <div className="navbar__profile-menu" role="menu">

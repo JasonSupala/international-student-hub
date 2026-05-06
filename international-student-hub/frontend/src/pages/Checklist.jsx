@@ -164,19 +164,9 @@ export default function Checklist() {
                         {item.university && (
                           <span className="badge badge-gold">{item.university}</span>
                         )}
-                        {item.resource_url && (
-                          <a
-                            href={item.resource_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="checklist-item__link"
-                          >
-                            More info →
-                          </a>
-                        )}
                         <Link
                           to={`/checklist/items/${item.slug}`}
-                          className="checklist-item__link"
+                          className="btn btn-outline checklist-item__read-more"
                         >
                           Read more →
                         </Link>

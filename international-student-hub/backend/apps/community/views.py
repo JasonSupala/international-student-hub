@@ -51,19 +51,20 @@ class PostViewSet(viewsets.ModelViewSet):
     def upvote(self, request, pk=None):
         """
         POST /api/v1/community/posts/<id>/upvote/
-        Increment upvote count. Simple integer bump for MVP.
+        Toggle the current user's upvote.
         """
         post = self.get_object()
         user = request.user
-        if user in post.upvoted_by.all():
-            return Response(
-                {"error": "You have already upvoted this post."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        post.upvoted_by.add(user)
-        post.upvotes += 1
-        post.save()
-        return Response({"upvotes": post.upvotes})
+        if post.upvoted_by.filter(pk=user.pk).exists():
+            post.upvoted_by.remove(user)
+            post.upvotes = max(post.upvotes - 1, 0)
+            has_upvoted = False
+        else:
+            post.upvoted_by.add(user)
+            post.upvotes += 1
+            has_upvoted = True
+        post.save(update_fields=["upvotes"])
+        return Response({"upvotes": post.upvotes, "has_upvoted": has_upvoted})
 
 
 class ReplyViewSet(viewsets.ModelViewSet):
@@ -85,15 +86,16 @@ class ReplyViewSet(viewsets.ModelViewSet):
         """POST /api/v1/community/replies/<id>/upvote/"""
         reply = self.get_object()
         user = request.user
-        if user in reply.upvoted_by.all():
-            return Response(
-                {"error": "You have already upvoted this reply."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        reply.upvoted_by.add(user)
-        reply.upvotes += 1
-        reply.save()
-        return Response({"upvotes": reply.upvotes})
+        if reply.upvoted_by.filter(pk=user.pk).exists():
+            reply.upvoted_by.remove(user)
+            reply.upvotes = max(reply.upvotes - 1, 0)
+            has_upvoted = False
+        else:
+            reply.upvoted_by.add(user)
+            reply.upvotes += 1
+            has_upvoted = True
+        reply.save(update_fields=["upvotes"])
+        return Response({"upvotes": reply.upvotes, "has_upvoted": has_upvoted})
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def accept(self, request, pk=None):

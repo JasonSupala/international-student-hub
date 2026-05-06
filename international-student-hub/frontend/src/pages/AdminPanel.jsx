@@ -157,6 +157,8 @@ const MODEL_CONFIGS = [
   },
 ]
 
+const LOCKED_EDIT_FIELDS = new Set(['id', 'user', 'item', 'category', 'author', 'post'])
+
 function field(name, label, type = 'text', required = false) {
   return { name, label, type, required }
 }
@@ -183,8 +185,9 @@ function normalizeRecord(record, fields) {
   return next
 }
 
-function payloadForSave(form, fields) {
+function payloadForSave(form, fields, mode) {
   return fields.reduce((acc, f) => {
+    if (mode !== 'create' && LOCKED_EDIT_FIELDS.has(f.name)) return acc
     const value = form[f.name]
     if (f.name === 'password' && !value) return acc
     if (f.type === 'number') acc[f.name] = value === '' ? null : Number(value)
@@ -259,7 +262,7 @@ export default function AdminPanel() {
     setSaving(true)
     setError('')
     try {
-      const payload = payloadForSave(form, activeModel.fields)
+      const payload = payloadForSave(form, activeModel.fields, mode)
       if (mode === 'create') {
         const { data } = await createAdminRecord(activeModel.endpoint, payload)
         setSelected(data)
@@ -383,6 +386,7 @@ export default function AdminPanel() {
                       key={f.name}
                       field={f}
                       value={form[f.name]}
+                      disabled={mode !== 'create' && LOCKED_EDIT_FIELDS.has(f.name)}
                       onChange={(value) => setForm((current) => ({ ...current, [f.name]: value }))}
                     />
                   ))}
@@ -399,13 +403,14 @@ export default function AdminPanel() {
   )
 }
 
-function AdminField({ field, value, onChange }) {
+function AdminField({ field, value, disabled = false, onChange }) {
   if (field.type === 'checkbox') {
     return (
       <label className="admin-check">
         <input
           type="checkbox"
           checked={Boolean(value)}
+          disabled={disabled}
           onChange={(event) => onChange(event.target.checked)}
         />
         <span>{field.label}</span>
@@ -423,6 +428,7 @@ function AdminField({ field, value, onChange }) {
           rows={5}
           value={value || ''}
           required={field.required}
+          disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
         />
       ) : (
@@ -430,6 +436,7 @@ function AdminField({ field, value, onChange }) {
           type={field.type}
           value={value || ''}
           required={field.required}
+          disabled={disabled}
           step={field.type === 'number' ? 'any' : undefined}
           onChange={(event) => onChange(event.target.value)}
         />

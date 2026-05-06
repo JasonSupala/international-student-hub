@@ -22,7 +22,7 @@ export default function PostDetail() {
   async function handleUpvotePost() {
     if (!user) return
     const res = await api.post(`/community/posts/${id}/upvote/`)
-    setPost(p => ({ ...p, upvotes: res.data.upvotes }))
+    setPost(p => ({ ...p, upvotes: res.data.upvotes, has_upvoted: res.data.has_upvoted }))
   }
 
   async function handleUpvoteReply(replyId) {
@@ -30,7 +30,11 @@ export default function PostDetail() {
     const res = await api.post(`/community/replies/${replyId}/upvote/`)
     setPost(p => ({
       ...p,
-      replies: p.replies.map(r => r.id === replyId ? { ...r, upvotes: res.data.upvotes } : r)
+      replies: p.replies.map(r => r.id === replyId ? {
+        ...r,
+        upvotes: res.data.upvotes,
+        has_upvoted: res.data.has_upvoted,
+      } : r)
     }))
   }
 
@@ -73,7 +77,11 @@ export default function PostDetail() {
         <div className="post-detail card fade-up">
           <div className="post-detail__main">
             <div className="post-detail__sidebar">
-              <button className="post-upvote-btn" onClick={handleUpvotePost} disabled={!user}>
+              <button
+                className={`post-upvote-btn ${post.has_upvoted ? 'post-upvote-btn--active' : ''}`}
+                onClick={handleUpvotePost}
+                disabled={!user}
+              >
                 ▲<span>{post.upvotes}</span>
               </button>
             </div>
@@ -110,7 +118,7 @@ export default function PostDetail() {
             >
               <div className="reply-card__sidebar">
                 <button
-                  className="post-upvote-btn post-upvote-btn--sm"
+                  className={`post-upvote-btn post-upvote-btn--sm ${reply.has_upvoted ? 'post-upvote-btn--active' : ''}`}
                   onClick={() => handleUpvoteReply(reply.id)}
                   disabled={!user}
                 >

@@ -58,6 +58,14 @@
   color: var(--red);
 }
 
+.post-upvote-btn--active {
+  color: var(--red);
+}
+
+.post-upvote-btn--active:hover:not(:disabled) {
+  color: var(--text-muted);
+}
+
 .post-upvote-btn span {
   font-size: 1rem;
 }

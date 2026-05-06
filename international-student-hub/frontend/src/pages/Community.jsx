@@ -40,7 +40,11 @@ export default function Community() {
     if (!user) { navigate('/login'); return }
     try {
       const res = await api.post(`/community/posts/${postId}/upvote/`)
-      setPosts(ps => ps.map(p => p.id === postId ? { ...p, upvotes: res.data.upvotes } : p))
+      setPosts(ps => ps.map(p => p.id === postId ? {
+        ...p,
+        upvotes: res.data.upvotes,
+        has_upvoted: res.data.has_upvoted,
+      } : p))
     } catch {}
   }
 
@@ -146,9 +150,9 @@ export default function Community() {
               >
                 <div className="post-card__left">
                   <button
-                    className="post-upvote"
+                    className={`post-upvote ${post.has_upvoted ? 'post-upvote--active' : ''}`}
                     onClick={e => handleUpvote(e, post.id)}
-                    title="Upvote"
+                    title={post.has_upvoted ? 'Remove upvote' : 'Upvote'}
                   >
                     ▲ <span>{post.upvotes}</span>
                   </button>

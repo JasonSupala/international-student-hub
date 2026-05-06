@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import './Profile.css'
@@ -33,9 +33,25 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [avatarFile, setAvatarFile] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState(profile.avatar || '')
+
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview(profile.avatar || '')
+      return
+    }
+    const nextPreview = URL.createObjectURL(avatarFile)
+    setAvatarPreview(nextPreview)
+    return () => URL.revokeObjectURL(nextPreview)
+  }, [avatarFile, profile.avatar])
 
   const handleChange = (e) =>
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+
+  const handleAvatarChange = (e) => {
+    setAvatarFile(e.target.files?.[0] || null)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -43,10 +59,16 @@ export default function Profile() {
     setError('')
     setSuccess(false)
     try {
-      await api.patch('/auth/profile/', form)
+      const payload = avatarFile ? new FormData() : form
+      if (avatarFile) {
+        Object.entries(form).forEach(([key, value]) => payload.append(key, value ?? ''))
+        payload.append('avatar', avatarFile)
+      }
+      await api.patch('/auth/profile/', payload)
       // Refresh user state from server
       const { data } = await api.get('/auth/profile/')
       updateUser(data)
+      setAvatarFile(null)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
@@ -70,7 +92,11 @@ export default function Profile() {
           {/* Avatar card */}
           <div className="profile-avatar-card card fade-up">
             <div className="profile-avatar">
-              {user?.username?.charAt(0).toUpperCase()}
+              {avatarPreview ? (
+                <img src={avatarPreview} alt={`${user?.username}'s avatar`} />
+              ) : (
+                user?.username?.charAt(0).toUpperCase()
+              )}
             </div>
             <h2 className="profile-username">@{user?.username}</h2>
             {profile.university && (
@@ -103,6 +129,11 @@ export default function Profile() {
                   <label>Last name</label>
                   <input name="last_name" value={form.last_name} onChange={handleChange} placeholder="Last name" />
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label>Profile picture</label>
+                <input name="avatar" type="file" accept="image/*" onChange={handleAvatarChange} />
               </div>
 
               <div className="form-group">

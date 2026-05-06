@@ -107,6 +107,14 @@
   color: var(--red);
 }
 
+.post-upvote--active {
+  color: var(--red);
+}
+
+.post-upvote--active:hover {
+  color: var(--text-muted);
+}
+
 .post-upvote span {
   font-size: 0.85rem;
 }
