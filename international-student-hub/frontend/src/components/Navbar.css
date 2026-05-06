@@ -110,6 +110,41 @@
   transform: scale(1.08);
 }
 
+.navbar__profile {
+  position: relative;
+}
+
+.navbar__profile-menu {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  width: 180px;
+  padding: 6px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+}
+
+.navbar__profile-item {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.9rem;
+  text-align: left;
+  text-decoration: none;
+}
+
+.navbar__profile-item:hover {
+  background: var(--cream-dark);
+}
+
+.navbar__profile-signout {
+  color: var(--red);
+}
+
 /* Hamburger */
 .navbar__hamburger {
   display: none;

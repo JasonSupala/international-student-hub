@@ -11,8 +11,9 @@ class ServiceCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(ServiceEntry)
 class ServiceEntryAdmin(admin.ModelAdmin):
-    list_display = ["name", "category", "university", "verified", "created_at"]
+    list_display = ["name", "slug", "category", "university", "verified", "created_at"]
     list_filter = ["category", "verified", "university"]
-    search_fields = ["name", "description", "tags", "address"]
+    search_fields = ["name", "slug", "description", "detail_description", "tags", "address"]
+    prepopulated_fields = {"slug": ("name",)}
     list_editable = ["verified"]  # Quick toggle verified status from list view
     ordering = ["-verified", "name"]

@@ -12,7 +12,8 @@ class ChecklistItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChecklistItem
         fields = [
-            "id", "category", "title", "description",
+            "id", "category", "title", "slug", "description",
+            "detail_description",
             "order", "resource_url", "university",
             "estimated_minutes", "is_active",
         ]
@@ -30,7 +31,8 @@ class ChecklistItemWithProgressSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChecklistItem
         fields = [
-            "id", "category", "title", "description",
+            "id", "category", "title", "slug", "description",
+            "detail_description",
             "order", "resource_url", "university",
             "estimated_minutes", "is_active",
             "completed", "completed_at",

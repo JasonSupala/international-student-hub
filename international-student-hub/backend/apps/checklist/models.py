@@ -9,6 +9,7 @@ Structure:
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.text import slugify
 
 
 class ChecklistCategory(models.Model):
@@ -45,8 +46,13 @@ class ChecklistItem(models.Model):
     )
 
     title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=220, unique=True, blank=True)
     description = models.TextField(
-        help_text="Detailed instructions for completing this task"
+        help_text="Short summary shown on checklist lists"
+    )
+    detail_description = models.TextField(
+        blank=True,
+        help_text="Long Markdown instructions shown on the detail page"
     )
 
     # Order within the category
@@ -75,6 +81,17 @@ class ChecklistItem(models.Model):
 
     def __str__(self):
         return f"[{self.category.name}] {self.title}"
+
+    def save(self, *args, **kwargs):
+        base_slug = slugify(self.slug or self.title) or "checklist-item"
+        slug = base_slug
+        suffix = 2
+        qs = ChecklistItem.objects.exclude(pk=self.pk)
+        while qs.filter(slug=slug).exists():
+            slug = f"{base_slug}-{suffix}"
+            suffix += 1
+        self.slug = slug
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["category__order", "order"]

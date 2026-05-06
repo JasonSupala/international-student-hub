@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../api/axios'
 import './Checklist.css'
 
@@ -149,7 +150,9 @@ export default function Checklist() {
                     </button>
 
                     <div className="checklist-item__body">
-                      <h4 className="checklist-item__title">{item.title}</h4>
+                      <h4 className="checklist-item__title">
+                        <Link to={`/checklist/items/${item.slug}`}>{item.title}</Link>
+                      </h4>
                       <p className="checklist-item__desc">{item.description}</p>
 
                       <div className="checklist-item__meta">
@@ -171,6 +174,12 @@ export default function Checklist() {
                             More info →
                           </a>
                         )}
+                        <Link
+                          to={`/checklist/items/${item.slug}`}
+                          className="checklist-item__link"
+                        >
+                          Read more →
+                        </Link>
                       </div>
                     </div>
                   </div>

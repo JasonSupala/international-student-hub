@@ -7,6 +7,7 @@ Structure:
 """
 
 from django.db import models
+from django.utils.text import slugify
 
 
 class ServiceCategory(models.Model):
@@ -34,6 +35,7 @@ class ServiceEntry(models.Model):
     Examples: 7-Eleven near NSYSU (SIM), Kaohsiung Chang Gung Hospital (clinic)
     """
     name = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=220, unique=True, blank=True)
     category = models.ForeignKey(
         ServiceCategory,
         on_delete=models.SET_NULL,
@@ -42,7 +44,11 @@ class ServiceEntry(models.Model):
     )
 
     description = models.TextField(
-        help_text="What makes this place useful for international students?"
+        help_text="Short summary shown on directory lists"
+    )
+    detail_description = models.TextField(
+        blank=True,
+        help_text="Long Markdown description shown on the detail page"
     )
 
     # Physical location
@@ -99,6 +105,17 @@ class ServiceEntry(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.category})"
+
+    def save(self, *args, **kwargs):
+        base_slug = slugify(self.slug or self.name) or "service-entry"
+        slug = base_slug
+        suffix = 2
+        qs = ServiceEntry.objects.exclude(pk=self.pk)
+        while qs.filter(slug=slug).exists():
+            slug = f"{base_slug}-{suffix}"
+            suffix += 1
+        self.slug = slug
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name_plural = "Service Entries"

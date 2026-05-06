@@ -47,6 +47,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "apps.accounts",
+    "apps.admin_panel",
     "apps.checklist",
     "apps.directory",
     "apps.community",

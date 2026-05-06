@@ -19,8 +19,8 @@ class ServiceEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = ServiceEntry
         fields = [
-            "id", "name", "category", "category_name",
-            "description", "address", "maps_link",
+            "id", "name", "slug", "category", "category_name",
+            "description", "detail_description", "address", "maps_link",
             "latitude", "longitude",
             "phone", "website", "tags",
             "university", "verified", "hours",

@@ -1,0 +1,165 @@
+.admin-page {
+  padding-bottom: 72px;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 92px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-model-btn {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  text-align: left;
+  font-weight: 600;
+}
+
+.admin-model-btn:hover,
+.admin-model-btn.active {
+  background: var(--cream-dark);
+  color: var(--navy);
+}
+
+.admin-main {
+  min-width: 0;
+}
+
+.admin-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-toolbar input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.75fr);
+  gap: 20px;
+}
+
+.admin-table-wrap,
+.admin-editor {
+  overflow: hidden;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-table th {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.admin-table tr {
+  cursor: pointer;
+}
+
+.admin-table tbody tr:hover,
+.admin-table tbody tr.active {
+  background: var(--cream-dark);
+}
+
+.admin-editor {
+  padding: 18px;
+}
+
+.admin-editor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-editor__header h2 {
+  font-size: 1.1rem;
+}
+
+.admin-delete {
+  color: var(--red);
+}
+
+.admin-form {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-form textarea {
+  resize: vertical;
+}
+
+.admin-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.admin-check input {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 980px) {
+  .admin-layout,
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .admin-model-btn {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-toolbar {
+    flex-direction: column;
+  }
+
+  .admin-table-wrap {
+    overflow-x: auto;
+  }
+
+  .admin-table {
+    min-width: 620px;
+  }
+}

@@ -3,6 +3,7 @@ checklist/views.py
 """
 
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
@@ -52,6 +53,14 @@ class ChecklistItemViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     filterset_fields = ["category", "university"]
     search_fields = ["title", "description"]
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_value = self.kwargs.get(self.lookup_url_kwarg or self.lookup_field)
+        lookup_field = "pk" if str(lookup_value).isdigit() else "slug"
+        obj = get_object_or_404(queryset, **{lookup_field: lookup_value})
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     def get_serializer_context(self):
         # Pass request to serializer so it can look up per-user progress

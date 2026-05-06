@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../api/axios'
 import './Directory.css'
 
@@ -93,7 +94,9 @@ export default function Directory() {
               <div key={entry.id} className={`entry-card card fade-up fade-up-${Math.min(i % 5 + 1, 5)}`}>
                 <div className="entry-card__top">
                   <div>
-                    <h3 className="entry-card__name">{entry.name}</h3>
+                    <h3 className="entry-card__name">
+                      <Link to={`/directory/entries/${entry.slug}`}>{entry.name}</Link>
+                    </h3>
                     <span className="badge badge-navy">{entry.category_name}</span>
                   </div>
                   {/*entry.verified && (
@@ -133,6 +136,9 @@ export default function Directory() {
                 )}
 
                 <div className="entry-card__actions">
+                  <Link to={`/directory/entries/${entry.slug}`} className="btn btn-primary entry-btn">
+                    Read more
+                  </Link>
                   {entry.maps_link && (
                     <a href={entry.maps_link} target="_blank" rel="noopener noreferrer" className="btn btn-outline entry-btn">
                       📍 View on Maps

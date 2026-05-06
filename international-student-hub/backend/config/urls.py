@@ -42,6 +42,7 @@ urlpatterns = [
     path("api/v1/directory/", include("apps.directory.urls")),
     path("api/v1/community/", include("apps.community.urls")),
     path("api/v1/bot/", include("apps.bot.urls")),
+    path("api/v1/admin-panel/", include("apps.admin_panel.urls")),
 ]
 
 # Serve uploaded media files in development (in prod, use a CDN/object storage)

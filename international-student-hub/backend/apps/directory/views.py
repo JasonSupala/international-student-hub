@@ -2,6 +2,7 @@
 directory/views.py
 """
 
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -39,6 +40,14 @@ class ServiceEntryViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ["category__slug", "university", "verified"]
     search_fields = ["name", "description", "tags", "address"]
     ordering_fields = ["name", "created_at"]
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_value = self.kwargs.get(self.lookup_url_kwarg or self.lookup_field)
+        lookup_field = "pk" if str(lookup_value).isdigit() else "slug"
+        obj = get_object_or_404(queryset, **{lookup_field: lookup_value})
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     def get_queryset(self):
         qs = ServiceEntry.objects.select_related("category").filter(verified=True)

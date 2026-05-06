@@ -4,11 +4,12 @@ import { useAuth } from '../context/AuthContext'
 import './Navbar.css'
 
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { user, isSuperuser, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -17,7 +18,10 @@ export default function Navbar() {
   }, [])
 
   // Close mobile menu on route change
-  useEffect(() => { setMenuOpen(false) }, [location])
+  useEffect(() => {
+    setMenuOpen(false)
+    setProfileOpen(false)
+  }, [location])
 
   const handleLogout = async () => {
     await logout()
@@ -49,12 +53,29 @@ export default function Navbar() {
         {/* Auth buttons */}
         <div className="navbar__auth">
           {user ? (
-            <>
-              <NavLink to="/profile" className="navbar__avatar" title={user.username}>
+            <div className="navbar__profile">
+              <button
+                type="button"
+                className="navbar__avatar"
+                title={user.username}
+                onClick={() => setProfileOpen((open) => !open)}
+                aria-haspopup="menu"
+                aria-expanded={profileOpen}
+              >
                 {user.username.charAt(0).toUpperCase()}
-              </NavLink>
-              <button className="btn btn-ghost" onClick={handleLogout}>Sign out</button>
-            </>
+              </button>
+              {profileOpen && (
+                <div className="navbar__profile-menu" role="menu">
+                  <NavLink to="/profile" className="navbar__profile-item">Profile</NavLink>
+                  {isSuperuser && (
+                    <NavLink to="/admin-panel" className="navbar__profile-item">Admin Panel</NavLink>
+                  )}
+                  <button className="navbar__profile-item navbar__profile-signout" onClick={handleLogout}>
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <>
               <NavLink to="/login" className="btn btn-ghost">Log in</NavLink>
@@ -81,6 +102,9 @@ export default function Navbar() {
         {user ? (
           <>
             <NavLink to="/profile" className="navbar__mobile-link">Profile</NavLink>
+            {isSuperuser && (
+              <NavLink to="/admin-panel" className="navbar__mobile-link">Admin Panel</NavLink>
+            )}
             <button className="navbar__mobile-link navbar__mobile-logout" onClick={handleLogout}>
               Sign out
             </button>

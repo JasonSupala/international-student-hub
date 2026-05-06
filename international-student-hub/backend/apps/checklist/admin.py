@@ -5,7 +5,8 @@ from .models import ChecklistCategory, ChecklistItem, UserChecklistProgress
 class ChecklistItemInline(admin.TabularInline):
     model = ChecklistItem
     extra = 1
-    fields = ["title", "order", "university", "is_active"]
+    fields = ["title", "slug", "order", "university", "is_active"]
+    prepopulated_fields = {"slug": ("title",)}
 
 
 @admin.register(ChecklistCategory)
@@ -17,9 +18,10 @@ class ChecklistCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(ChecklistItem)
 class ChecklistItemAdmin(admin.ModelAdmin):
-    list_display = ["title", "category", "university", "order", "is_active"]
+    list_display = ["title", "slug", "category", "university", "order", "is_active"]
     list_filter = ["category", "university", "is_active"]
-    search_fields = ["title", "description"]
+    search_fields = ["title", "slug", "description", "detail_description"]
+    prepopulated_fields = {"slug": ("title",)}
     ordering = ["category__order", "order"]
 
 
