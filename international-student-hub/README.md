@@ -1,285 +1,186 @@
-# 🇹🇼 International Student Hub — Taiwan
+# International Student Hub
 
-A full-stack, API-first web platform helping international students navigate their first weeks in Taiwan. Covers arrival checklists, a searchable service directory, university-specific tips, community Q&A, and a LINE Bot for real-time FAQ.
+A full-stack web platform that helps international students settle in Taiwan with practical arrival guidance, a service directory, community Q&A, and LINE Bot FAQ support.
 
-Built by Jason Supala | NSYSU Computer Science | 2026
+Built by **Jason Supala**, Computer Science student at NSYSU.
 
----
+## Why This Project
 
-## ✨ Features
+Moving to a new country creates many small but high-impact problems: finding the right government office, opening a bank account, getting a SIM card, understanding university-specific procedures, and asking questions without knowing who to ask. International Student Hub brings those workflows into one focused platform for students arriving in Taiwan.
 
-| Feature | Status |
-|---|---|
-| JWT Authentication (register, login, logout, refresh) | ✅ Phase 1 |
-| User profiles (country, university, arrival date) | ✅ Phase 1 |
-| Arrival checklist with per-user progress tracking | ✅ Phase 1 |
-| Searchable service directory (food, banks, SIM, clinics) | ✅ Phase 1 |
-| LINE Bot with keyword-based FAQ responses | ✅ Phase 1 |
-| React frontend consuming DRF API | ✅ Phase 1 |
-| Community Q&A board with upvotes and accepted answers | 🔄 Phase 2 |
-| Google Maps pins on directory entries | 🔄 Phase 2 |
-| Google Sheets export for checklists | 🔄 Phase 2 |
-| International student events board | 🔄 Phase 2 |
-| AI-powered LINE Bot (Claude/GPT integration) | 🎯 Stretch |
-| React Native mobile app | 🎯 Stretch |
-| Multi-language support (ID, VI, JA, ZH) | 🎯 Stretch |
-| Buddy matching for new arrivals | 🎯 Stretch |
+The project is designed as an API-first product: a Django REST backend powers a React frontend, while the same backend can support integrations such as a LINE Bot or a future mobile client.
 
----
+## Highlights
 
-## 🏗️ Architecture
+- JWT-based registration, login, logout, token refresh, and profile management
+- Student profiles with country, university, arrival date, bio, avatar, and preferred language fields
+- Personalized arrival checklist with per-user completion tracking
+- Searchable service directory for essentials such as banks, clinics, food, housing, and SIM cards
+- Community Q&A board with posts, replies, upvotes, and accepted answers
+- LINE Bot webhook with database-managed FAQ responses
+- Admin panel endpoints for managing platform content
+- Markdown-powered detail pages for rich checklist and directory guidance
+- Dockerized backend services for local development with PostgreSQL, Redis, and Celery
 
-**API-first design.** The Django backend serves JSON only — no HTML rendering. The React frontend and a future React Native mobile app both consume the same REST API, with no backend changes required.
+## Tech Stack
 
-```
-React Frontend  ──────────┐
-                           ├──► Django REST API ──► PostgreSQL
-React Native (future) ────┘         │
-                                     ├──► Redis (cache)
-LINE Bot ────────────────────────────┤
-                                     └──► Celery (async tasks)
-```
+| Area | Technologies |
+| --- | --- |
+| Frontend | React, Vite, React Router, Axios, React Markdown |
+| Backend | Django, Django REST Framework |
+| Authentication | Simple JWT |
+| Database | PostgreSQL |
+| Async / Cache | Redis, Celery, django-redis |
+| Integrations | LINE Messaging API webhook |
+| Deployment-ready tooling | Docker, Gunicorn, WhiteNoise, CORS configuration |
 
----
+## Product Features
 
-## 🛠️ Tech Stack
+### Student Accounts
 
-| Layer | Technology | Why |
-|---|---|---|
-| Backend | Django 4.2 + DRF | Strong foundation, clean API design |
-| Database | PostgreSQL 15 | Production-grade, handles real users |
-| Auth | JWT (simplejwt) | Stateless, works for web and mobile |
-| Cache / Queue | Redis + Celery | Async tasks (LINE replies, exports) |
-| LINE Bot | LINE Messaging API | Huge in Taiwan, familiar to students |
-| Frontend | React + Vite | Fast build, reusable for mobile later |
-| Deployment | Docker → Railway/Render | Free tier, public URL, easy CI/CD |
+Users can register, authenticate with JWT, manage their profile, and keep their student context attached to platform activity. Profiles include university and arrival data so future recommendations can be scoped to a student's situation.
 
----
+### Arrival Checklist
 
-## 🚀 Local Setup
+Checklist content is organized by category and can be global or university-specific. Students can track completion progress across tasks such as immigration steps, housing, banking, and campus onboarding.
 
-### Prerequisites
+### Service Directory
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
-- Git
+The directory stores verified service entries with category, address, contact information, website, Google Maps links, tags, university targeting, and long-form Markdown descriptions. This makes the app useful as both a quick search tool and a practical guide.
 
-### 1. Clone the repository
+### Community Q&A
 
-```bash
-git clone https://github.com/YOUR_USERNAME/international-student-hub.git
-cd international-student-hub
-```
+Students can create posts, reply to questions, upvote useful content, and mark accepted answers. The data model supports university-scoped discussions while still allowing Taiwan-wide questions.
 
-### 2. Create your `.env` file
+### LINE Bot FAQ
 
-```bash
-cp .env.example .env
+The backend includes a LINE webhook that checks incoming messages against active FAQ keywords stored in the database. This keeps common answers editable through admin tooling instead of hardcoding bot responses.
+
+## Architecture
+
+```text
+React + Vite frontend
+        |
+        v
+Django REST Framework API
+        |
+        +-- PostgreSQL for application data
+        +-- Redis for cache and Celery broker
+        +-- Celery for async tasks
+        +-- LINE Messaging API webhook
 ```
 
-Open `.env` and fill in at minimum:
-- `DJANGO_SECRET_KEY` — generate one with the command below
-- `LINE_CHANNEL_ACCESS_TOKEN` and `LINE_CHANNEL_SECRET` — from the LINE Developers Console
+The backend exposes versioned API routes under `/api/v1/`. Feature domains are separated into Django apps for accounts, checklist, directory, community, bot, and admin panel.
 
-```bash
-# Generate a Django secret key
-python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+## Repository Structure
+
+```text
+international-student-hub/
+|-- backend/
+|   |-- apps/
+|   |   |-- accounts/
+|   |   |-- admin_panel/
+|   |   |-- bot/
+|   |   |-- checklist/
+|   |   |-- community/
+|   |   `-- directory/
+|   |-- config/
+|   |   |-- settings/
+|   |   |-- urls.py
+|   |   `-- celery.py
+|   |-- manage.py
+|   `-- requirements.txt
+|-- frontend/
+|   |-- src/
+|   |   |-- api/
+|   |   |-- components/
+|   |   |-- context/
+|   |   |-- pages/
+|   |   `-- styles/
+|   |-- package.json
+|   `-- vite.config.js
+|-- docker-compose.yml
+`-- README.md
 ```
 
-### 3. Build and start all services
+## Local Development
 
-```bash
+### Backend
+
+```powershell
+cd backend
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+The backend runs at `http://127.0.0.1:8000`.
+
+### Frontend
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend usually runs at `http://localhost:5173`.
+
+### Docker Services
+
+From the repository root:
+
+```powershell
 docker-compose up --build
 ```
 
-This starts:
-- **Django** at `http://localhost:8000`
-- **PostgreSQL** at `localhost:5432`
-- **Redis** at `localhost:6379`
-- **Celery worker** (background tasks)
+Use Docker when you want the backend dependencies, PostgreSQL, Redis, and Celery running together.
 
-### 4. Create a superuser (for Django admin)
+## Key API Areas
 
-```bash
-docker-compose exec web python manage.py createsuperuser
+All backend routes are versioned under `/api/v1/`.
+
+| Area | Example Routes |
+| --- | --- |
+| Auth | `/auth/register/`, `/auth/login/`, `/auth/profile/`, `/auth/token/refresh/` |
+| Checklist | `/checklist/categories/`, `/checklist/items/`, `/checklist/progress/` |
+| Directory | `/directory/categories/`, `/directory/entries/`, `/directory/entries/map/` |
+| Community | `/community/posts/`, `/community/replies/` |
+| LINE Bot | `/bot/webhook/`, `/bot/faqs/` |
+| Admin Panel | `/admin-panel/` |
+
+## Testing
+
+Backend tests:
+
+```powershell
+cd backend
+python manage.py test
 ```
 
-### 5. Load sample data (optional)
+Frontend production build:
 
-```bash
-docker-compose exec web python manage.py loaddata initial_data.json
+```powershell
+cd frontend
+npm run build
 ```
 
-### 6. Access the API
+## Engineering Notes
 
-- **Django Admin:** http://localhost:8000/admin/
-- **API root:** http://localhost:8000/api/v1/
+- The backend is split by domain to keep feature ownership clear.
+- API permissions default to authenticated-or-read-only behavior, with stricter rules applied where needed.
+- Checklist and directory detail content supports Markdown, allowing richer guidance without frontend code changes.
+- Slugs are generated at the model layer for stable detail URLs.
+- LINE Bot FAQ content is stored in the database so responses can be managed operationally.
 
----
+## Future Improvements
 
-## 📡 API Endpoint Reference
+- Interactive map views for directory entries
+- More granular moderation tools for community posts and replies
+- Multi-language UI support for international student groups
+- Smarter recommendation logic based on university and arrival date
+- AI-assisted FAQ responses using curated platform content
 
-All endpoints are prefixed with `/api/v1/`.
+## License
 
-### Authentication
-
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `POST` | `/auth/register/` | Create account, returns JWT tokens | No |
-| `POST` | `/auth/login/` | Login, returns access + refresh tokens | No |
-| `POST` | `/auth/logout/` | Blacklist refresh token | Yes |
-| `POST` | `/auth/token/refresh/` | Exchange refresh for new access token | No |
-| `POST` | `/auth/token/verify/` | Check if token is valid | No |
-| `GET` | `/auth/profile/` | Get current user's profile | Yes |
-| `PATCH` | `/auth/profile/` | Update profile fields | Yes |
-
-### Checklist
-
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET` | `/checklist/categories/` | All categories with items + user progress | Optional |
-| `GET` | `/checklist/items/` | All items; filter: `?category=<id>&university=NSYSU` | Optional |
-| `GET` | `/checklist/progress/` | Current user's progress records | Yes |
-| `POST` | `/checklist/progress/` | Mark item complete: `{"item": 1, "completed": true}` | Yes |
-| `GET` | `/checklist/progress/summary/` | `{total, completed, percent_complete}` | Yes |
-
-### Directory
-
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET` | `/directory/categories/` | All service categories | No |
-| `GET` | `/directory/entries/` | All verified entries; filter: `?category__slug=sim-cards&university=NSYSU` | No |
-| `GET` | `/directory/entries/?search=halal` | Full-text search | No |
-| `GET` | `/directory/entries/map/` | Lightweight pin data for map; filter: `?category=sim-cards` | No |
-
-### Community
-
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET` | `/community/posts/` | All posts; filter: `?university=NSYSU&search=banking` | No |
-| `POST` | `/community/posts/` | Create a post | Yes |
-| `GET` | `/community/posts/<id>/` | Post detail with replies | No |
-| `PATCH` | `/community/posts/<id>/` | Edit own post | Yes (author) |
-| `DELETE` | `/community/posts/<id>/` | Delete own post | Yes (author) |
-| `POST` | `/community/posts/<id>/upvote/` | Upvote a post | Yes |
-| `GET` | `/community/replies/?post=<id>` | Replies for a post | No |
-| `POST` | `/community/replies/` | Create a reply | Yes |
-| `POST` | `/community/replies/<id>/upvote/` | Upvote a reply | Yes |
-| `POST` | `/community/replies/<id>/accept/` | Mark as accepted answer (post author only) | Yes |
-
-### LINE Bot
-
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `POST` | `/bot/webhook/` | LINE Messaging API webhook | LINE signature |
-| `GET` | `/bot/faqs/` | List FAQ entries | Admin only |
-| `POST` | `/bot/faqs/` | Create FAQ entry | Admin only |
-| `PATCH` | `/bot/faqs/<id>/` | Update FAQ entry | Admin only |
-
----
-
-## 🔐 Authentication Flow
-
-```
-1. POST /api/v1/auth/register/  →  { access, refresh, user }
-2. Store tokens in localStorage (or secure httpOnly cookie)
-3. Attach to every request:  Authorization: Bearer <access_token>
-4. When access token expires (401):  POST /api/v1/auth/token/refresh/
-5. On logout:  POST /api/v1/auth/logout/  { refresh: <token> }
-```
-
----
-
-## 🤖 LINE Bot Setup
-
-1. Go to [LINE Developers Console](https://developers.line.biz/console/)
-2. Create a **Provider** → create a **Messaging API** channel
-3. Under **Basic Settings**, copy the **Channel Secret** → `LINE_CHANNEL_SECRET` in `.env`
-4. Under **Messaging API**, issue a **Channel Access Token** → `LINE_CHANNEL_ACCESS_TOKEN`
-5. Deploy your backend to Railway/Render (needs a public HTTPS URL)
-6. Set the webhook URL to: `https://your-domain.up.railway.app/api/v1/bot/webhook/`
-7. Enable **Use webhook** in the LINE console
-8. Add FAQ entries via Django Admin at `/admin/bot/botfaq/`
-
----
-
-## 🚢 Deployment (Railway)
-
-```bash
-# Install Railway CLI
-npm install -g @railway/cli
-
-# Login and deploy
-railway login
-railway init
-railway up
-
-# Set environment variables
-railway variables set DJANGO_SECRET_KEY="..." DJANGO_SETTINGS_MODULE="config.settings.prod" ...
-
-# Run migrations on Railway
-railway run python manage.py migrate
-railway run python manage.py createsuperuser
-```
-
----
-
-## 📁 Project Structure
-
-```
-international-student-hub/
-├── backend/
-│   ├── config/
-│   │   ├── settings/
-│   │   │   ├── base.py     # Shared settings
-│   │   │   ├── dev.py      # Local development overrides
-│   │   │   └── prod.py     # Production (Railway/Render)
-│   │   ├── urls.py         # Root URL configuration
-│   │   ├── celery.py       # Celery app instance
-│   │   └── wsgi.py
-│   ├── apps/
-│   │   ├── accounts/       # JWT auth, user profiles
-│   │   ├── checklist/      # Arrival checklist + progress tracking
-│   │   ├── directory/      # Searchable service directory
-│   │   ├── community/      # Q&A board
-│   │   └── bot/            # LINE Bot webhook + FAQ
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/               # React app (separate)
-├── docker-compose.yml
-├── .env.example
-└── README.md
-```
-
----
-
-## 🗺️ Roadmap
-
-### ✅ Phase 1 — MVP (Weeks 1–8)
-- JWT auth + user profiles
-- Arrival checklist with progress tracking
-- Service directory with search
-- LINE Bot FAQ
-- React frontend deployed
-
-### 🔄 Phase 2 — Growth (Weeks 9–14)
-- Community Q&A board
-- Google Maps on directory entries
-- Google Sheets checklist export
-- International student events board
-
-### 🎯 Stretch Goals
-- AI-powered LINE Bot (Claude API answers)
-- React Native mobile app
-- Multi-language UI (Bahasa, Vietnamese, Japanese)
-- Buddy matching system
-- Housing sublet board
-
----
-
-## 📝 License
-
-MIT — free to use and build on.
-
----
-
-*Built for NSYSU international students, by an international student.*
+MIT
