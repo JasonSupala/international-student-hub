@@ -2,12 +2,29 @@
 accounts/serializers.py — Serializers for auth and user profile endpoints.
 """
 
+from io import BytesIO
+from pathlib import Path
+
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.core.files.base import ContentFile
+from PIL import Image, ImageOps, features
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import UserProfile
+
+
+MAX_AVATAR_UPLOAD_SIZE = 5 * 1024 * 1024
+MAX_AVATAR_STORED_SIZE = 512 * 1024
+MAX_AVATAR_DIMENSION = 512
+
+
+class AvatarImageField(serializers.ImageField):
+    def to_internal_value(self, data):
+        if getattr(data, "size", 0) > MAX_AVATAR_UPLOAD_SIZE:
+            raise serializers.ValidationError("File too large. Maximum avatar size is 5MB.")
+        return super().to_internal_value(data)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -111,6 +128,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source="user.first_name", required=False)
     last_name = serializers.CharField(source="user.last_name", required=False)
     email = serializers.EmailField(source="user.email", required=False)
+    avatar = AvatarImageField(required=False, allow_null=True)
 
     class Meta:
         model = UserProfile
@@ -120,7 +138,29 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             "bio", "avatar", "preferred_language",
         ]
 
+    def validate_avatar(self, avatar):
+        try:
+            avatar.seek(0)
+            with Image.open(avatar) as image:
+                image.verify()
+            avatar.seek(0)
+            with Image.open(avatar) as image:
+                image = ImageOps.exif_transpose(image)
+                image.load()
+                return _compress_avatar(image, avatar.name)
+        except serializers.ValidationError:
+            raise
+        except Exception:
+            raise serializers.ValidationError("Upload a valid image file.")
+        finally:
+            try:
+                avatar.seek(0)
+            except Exception:
+                pass
+
     def update(self, instance, validated_data):
+        old_avatar = instance.avatar if validated_data.get("avatar") and instance.avatar else None
+
         # Handle nested User fields
         user_data = validated_data.pop("user", {})
         for attr, value in user_data.items():
@@ -132,4 +172,54 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
 
+        if old_avatar and old_avatar.name != instance.avatar.name:
+            old_avatar.delete(save=False)
+
         return instance
+
+
+def _compress_avatar(image, original_name):
+    image.thumbnail((MAX_AVATAR_DIMENSION, MAX_AVATAR_DIMENSION), Image.Resampling.LANCZOS)
+
+    has_transparency = image.mode in ("RGBA", "LA") or (
+        image.mode == "P" and "transparency" in image.info
+    )
+    suffix = Path(original_name).stem or "avatar"
+
+    if has_transparency and features.check("webp"):
+        data = _encode_with_quality(image.convert("RGBA"), "WEBP")
+        filename = f"{suffix}.webp"
+    elif has_transparency:
+        buffer = BytesIO()
+        image.save(buffer, format="PNG", optimize=True)
+        data = buffer.getvalue()
+        filename = f"{suffix}.png"
+    else:
+        data = _encode_with_quality(image.convert("RGB"), "JPEG")
+        filename = f"{suffix}.jpg"
+
+    return ContentFile(data, name=filename)
+
+
+def _encode_with_quality(image, image_format):
+    quality_values = range(85, 35, -10)
+    current = image
+    data = b""
+
+    while True:
+        for quality in quality_values:
+            buffer = BytesIO()
+            current.save(buffer, format=image_format, optimize=True, quality=quality)
+            data = buffer.getvalue()
+            if len(data) <= MAX_AVATAR_STORED_SIZE:
+                return data
+
+        width, height = current.size
+        if max(width, height) <= 128:
+            return data
+
+        scale = max(128 / max(width, height), 0.85)
+        current = current.resize(
+            (max(1, int(width * scale)), max(1, int(height * scale))),
+            Image.Resampling.LANCZOS,
+        )

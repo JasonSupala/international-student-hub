@@ -16,6 +16,23 @@ const LANGUAGES = [
   { value: 'zh', label: 'Traditional Chinese' },
 ]
 
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024
+
+function formatApiError(data) {
+  if (!data) return 'Could not save profile.'
+  if (typeof data === 'string') return data
+  if (data.detail) return data.detail
+
+  const fieldErrors = Object.entries(data)
+    .map(([field, messages]) => {
+      const text = Array.isArray(messages) ? messages.join(' ') : messages
+      return `${field}: ${text}`
+    })
+    .filter(Boolean)
+
+  return fieldErrors[0] || 'Could not save profile.'
+}
+
 export default function Profile() {
   const { user, updateUser } = useAuth()
   const profile = user?.profile || {}
@@ -50,11 +67,26 @@ export default function Profile() {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))
 
   const handleAvatarChange = (e) => {
-    setAvatarFile(e.target.files?.[0] || null)
+    const file = e.target.files?.[0] || null
+    setError('')
+
+    if (file && file.size > MAX_AVATAR_SIZE) {
+      setAvatarFile(null)
+      e.target.value = ''
+      setError('avatar: File too large. Maximum avatar size is 5MB.')
+      return
+    }
+
+    setAvatarFile(file)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (avatarFile?.size > MAX_AVATAR_SIZE) {
+      setError('avatar: File too large. Maximum avatar size is 5MB.')
+      return
+    }
+
     setSaving(true)
     setError('')
     setSuccess(false)
@@ -72,7 +104,7 @@ export default function Profile() {
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Could not save profile.')
+      setError(formatApiError(err.response?.data))
     } finally {
       setSaving(false)
     }

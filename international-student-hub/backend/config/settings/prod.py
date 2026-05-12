@@ -56,6 +56,10 @@ CORS_ALLOWED_ORIGINS = env.list(
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# Serve public uploaded files, such as profile avatars, from MEDIA_ROOT.
+# On Railway, set MEDIA_ROOT to a mounted volume path so uploads survive deploys.
+SERVE_MEDIA_FILES = env.bool("SERVE_MEDIA_FILES", default=True)
+
 # --------------------------------------------------------------------------
 # Email — Configure with SendGrid or similar for production
 # --------------------------------------------------------------------------

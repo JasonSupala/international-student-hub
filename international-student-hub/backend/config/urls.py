@@ -6,9 +6,10 @@ Each app registers its own router, which is included here.
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.static import serve
 
 # JWT token endpoints (login / refresh / verify)
 from rest_framework_simplejwt.views import (
@@ -45,6 +46,14 @@ urlpatterns = [
     path("api/v1/admin-panel/", include("apps.admin_panel.urls")),
 ]
 
-# Serve uploaded media files in development (in prod, use a CDN/object storage)
+# Serve uploaded media files. Production can disable this if using CDN/object storage.
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+elif getattr(settings, "SERVE_MEDIA_FILES", False):
+    urlpatterns += [
+        re_path(
+            r"^media/(?P<path>.*)$",
+            serve,
+            {"document_root": settings.MEDIA_ROOT},
+        ),
+    ]
