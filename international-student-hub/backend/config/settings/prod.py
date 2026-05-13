@@ -49,6 +49,8 @@ CORS_ALLOWED_ORIGINS = env.list(
     default=[]
 )
 
+JWT_REFRESH_COOKIE_SECURE = True
+
 # --------------------------------------------------------------------------
 # Static Files — WhiteNoise serves static files in production without a CDN
 # --------------------------------------------------------------------------
@@ -58,7 +60,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Serve public uploaded files, such as profile avatars, from MEDIA_ROOT.
 # On Railway, set MEDIA_ROOT to a mounted volume path so uploads survive deploys.
-SERVE_MEDIA_FILES = env.bool("SERVE_MEDIA_FILES", default=True)
+SERVE_MEDIA_FILES = env.bool("SERVE_MEDIA_FILES", default=False)
 
 # --------------------------------------------------------------------------
 # Email — Configure with SendGrid or similar for production
