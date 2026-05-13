@@ -79,8 +79,8 @@
   text-align: left;
   cursor: pointer;
   transition: background-color var(--transition), border-color var(--transition), color var(--transition);
-  clip-path: polygon(var(--arrow-size) 0, calc(100% - var(--arrow-size)) 0, 100% 50%, calc(100% - var(--arrow-size)) 100%, var(--arrow-size) 100%, 0 50%);
-  margin-right: calc(var(--arrow-size) * -0.75);
+  clip-path: polygon(0 0, calc(100% - var(--arrow-size)) 0, 100% 50%, calc(100% - var(--arrow-size)) 100%, 0 100%, var(--arrow-size) 50%);
+  margin-right: calc(var(--arrow-size) * -0.5);
   position: relative;
 }
 
