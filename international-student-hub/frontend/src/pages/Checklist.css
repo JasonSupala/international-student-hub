@@ -55,19 +55,23 @@
 /* Category selector */
 .checklist-category-selector {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 0;
+  flex-wrap: nowrap;
+  gap: 0;
   margin: -18px 0 24px;
-  padding-right: 16px;
+  padding: 0 18px 0 0;
+  overflow-x: auto;
 }
 
 .checklist-category-tab {
-  flex: 1 1 180px;
-  min-width: 0;
+  --arrow-size: 18px;
+  flex: 1 0 190px;
+  min-width: 190px;
+  min-height: 64px;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
-  padding: 12px 28px;
+  padding: 14px calc(var(--arrow-size) + 20px) 14px calc(var(--arrow-size) + 20px);
   border: 1px solid var(--border);
   border-radius: 0;
   background: var(--white);
@@ -75,9 +79,14 @@
   text-align: left;
   cursor: pointer;
   transition: background-color var(--transition), border-color var(--transition), color var(--transition);
-  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%);
-  margin-right: -16px;
+  clip-path: polygon(var(--arrow-size) 0, calc(100% - var(--arrow-size)) 0, 100% 50%, calc(100% - var(--arrow-size)) 100%, var(--arrow-size) 100%, 0 50%);
+  margin-right: calc(var(--arrow-size) * -0.75);
   position: relative;
+}
+
+.checklist-category-tab:first-child {
+  padding-left: 46px;
+  clip-path: polygon(0 0, calc(100% - var(--arrow-size)) 0, 100% 50%, calc(100% - var(--arrow-size)) 100%, 0 100%, var(--arrow-size) 50%);
 }
 
 .checklist-category-tab:hover {
@@ -98,8 +107,9 @@
   border-color: var(--navy-light);
 }
 
-.checklist-category-tab__icon {
-  font-size: 1.25rem;
+.checklist-category-tab__number {
+  font-weight: 800;
+  font-size: 1rem;
   line-height: 1;
 }
 
@@ -108,6 +118,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 2px;
 }
 
@@ -128,16 +139,23 @@
 
 @media (max-width: 640px) {
   .checklist-category-selector {
-    gap: 8px 0;
-    padding-right: 12px;
+    padding-right: 16px;
   }
 
   .checklist-category-tab {
-    flex-basis: 100%;
-    padding-right: 24px;
-    padding-left: 24px;
-    margin-right: -12px;
-    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%);
+    --arrow-size: 16px;
+    flex-basis: 160px;
+    min-width: 160px;
+    min-height: 56px;
+    padding: 12px calc(var(--arrow-size) + 16px);
+  }
+
+  .checklist-category-tab:first-child {
+    padding-left: 38px;
+  }
+
+  .checklist-category-tab__name {
+    font-size: 0.85rem;
   }
 }
 

@@ -13,9 +13,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 
 from .models import BotFAQ
 from .serializers import BotFAQSerializer
@@ -60,6 +61,7 @@ def find_faq_response(user_message: str) -> str | None:
 @csrf_exempt  # LINE sends POST requests; CSRF token not applicable for webhooks
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([ScopedRateThrottle])
 def line_webhook(request):
     """
     POST /api/v1/bot/webhook/
@@ -111,6 +113,9 @@ def line_webhook(request):
 
     # LINE requires a 200 OK response quickly, even if processing continues async
     return Response({"status": "ok"}, status=status.HTTP_200_OK)
+
+
+line_webhook.cls.throttle_scope = "webhook"
 
 
 class BotFAQViewSet(viewsets.ModelViewSet):

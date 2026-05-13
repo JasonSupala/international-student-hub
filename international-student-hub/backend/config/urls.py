@@ -12,10 +12,8 @@ from django.conf.urls.static import static
 from django.views.static import serve
 
 # JWT token endpoints (login / refresh / verify)
-from rest_framework_simplejwt.views import (
-    TokenRefreshView,
-    TokenVerifyView,
-)
+from rest_framework_simplejwt.views import TokenVerifyView
+from apps.accounts.views import CookieTokenRefreshView
 
 urlpatterns = [
     # Django admin (useful for content management)
@@ -33,7 +31,7 @@ urlpatterns = [
     path("api/v1/auth/", include("apps.accounts.urls")),
 
     # JWT token management (built-in simplejwt views)
-    path("api/v1/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/v1/auth/token/refresh/", CookieTokenRefreshView.as_view(), name="token_refresh"),
     path("api/v1/auth/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
 
     # -----------------------------------------------------------------------

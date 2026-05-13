@@ -3,7 +3,7 @@ accounts/serializers.py — Serializers for auth and user profile endpoints.
 """
 
 from io import BytesIO
-from pathlib import Path
+from uuid import uuid4
 
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
@@ -112,11 +112,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 class RegisterResponseSerializer(serializers.Serializer):
     """
     Response body returned after successful registration.
-    Includes JWT tokens so the user doesn't need to log in separately.
+    Includes an access token; refresh is set in an HttpOnly cookie.
     """
     user = UserSerializer(read_only=True)
     access = serializers.CharField(read_only=True)
-    refresh = serializers.CharField(read_only=True)
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
@@ -184,7 +183,7 @@ def _compress_avatar(image, original_name):
     has_transparency = image.mode in ("RGBA", "LA") or (
         image.mode == "P" and "transparency" in image.info
     )
-    suffix = Path(original_name).stem or "avatar"
+    suffix = f"avatar-{uuid4().hex}"
 
     if has_transparency and features.check("webp"):
         data = _encode_with_quality(image.convert("RGBA"), "WEBP")

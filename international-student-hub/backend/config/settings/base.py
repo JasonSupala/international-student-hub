@@ -59,6 +59,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",   # Must be before CommonMiddleware
     "django.middleware.security.SecurityMiddleware",
+    "config.middleware.ContentSecurityPolicyMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -155,6 +156,20 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/min",
+        "user": "300/min",
+        "auth_login": "5/min",
+        "auth_register": "3/hour",
+        "auth_refresh": "10/min",
+        "community_write": "30/min",
+        "profile_update": "30/min",
+        "webhook": "120/min",
+    },
 }
 
 
@@ -170,6 +185,12 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),   # Authorization: Bearer <token>
     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
 }
+
+JWT_REFRESH_COOKIE_NAME = env("JWT_REFRESH_COOKIE_NAME", default="refresh_token")
+JWT_REFRESH_COOKIE_HTTPONLY = True
+JWT_REFRESH_COOKIE_SECURE = env.bool("JWT_REFRESH_COOKIE_SECURE", default=not env.bool("DEBUG", default=False))
+JWT_REFRESH_COOKIE_SAMESITE = env("JWT_REFRESH_COOKIE_SAMESITE", default="Lax")
+JWT_REFRESH_COOKIE_PATH = "/api/v1/auth/"
 
 
 # --------------------------------------------------------------------------
@@ -212,3 +233,17 @@ LINE_CHANNEL_SECRET = env("LINE_CHANNEL_SECRET", default="")
 # In base.py we allow no origins; dev.py and prod.py set this properly.
 CORS_ALLOWED_ORIGINS = []
 CORS_ALLOW_CREDENTIALS = True  # Required for cookies/auth headers
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+REFERRER_POLICY = "same-origin"
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; "
+    "script-src 'self'; "
+    "style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data: blob:; "
+    "font-src 'self' data:; "
+    "connect-src 'self'; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'"
+)

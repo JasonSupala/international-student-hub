@@ -136,7 +136,7 @@ export default function Checklist() {
         ) : (
           <>
           <div className="checklist-category-selector fade-up fade-up-1" aria-label="Checklist categories">
-            {categories.map((cat) => {
+            {categories.map((cat, index) => {
               const isActive = cat.id === selectedCategory.id
               const completedCount = cat.items.filter((i) => i.completed).length
 
@@ -148,7 +148,7 @@ export default function Checklist() {
                   onClick={() => setSelectedCategoryId(cat.id)}
                   aria-pressed={isActive}
                 >
-                  <span className="checklist-category-tab__icon">{cat.icon || '*'}</span>
+                  <span className="checklist-category-tab__number">{index + 1}.</span>
                   <span className="checklist-category-tab__body">
                     <span className="checklist-category-tab__name">{cat.name}</span>
                     <span className="checklist-category-tab__count">

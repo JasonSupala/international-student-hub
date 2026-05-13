@@ -1,26 +1,18 @@
-/**
- * context/AuthContext.jsx
- *
- * Provides authentication state to the entire app.
- * Wrap your app in <AuthProvider> and consume with useAuth().
- *
- * useAuth() returns:
- *   user       — current user object (null if not logged in)
- *   loading    — true while checking auth on first load
- *   login()    — call with { username, password }, stores tokens
- *   logout()   — blacklists refresh token, clears state
- *   updateUser()— update local user state after profile edit
- */
-
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import api from '../api/axios'
+import api, { clearAccessToken, refreshAccessToken, setAccessToken } from '../api/axios'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [isSuperuser, setIsSuperuser] = useState(false)
-  const [loading, setLoading] = useState(true) // checking stored token on mount
+  const [loading, setLoading] = useState(true)
+
+  const clearAuthState = useCallback(() => {
+    clearAccessToken()
+    setUser(null)
+    setIsSuperuser(false)
+  }, [])
 
   const applyUser = useCallback(async (profile) => {
     const normalized = {
@@ -43,50 +35,31 @@ export function AuthProvider({ children }) {
     return normalized
   }, [])
 
-  // On mount: if we have a stored access token, fetch the user profile
   useEffect(() => {
-    const token = localStorage.getItem('access')
-    if (!token) {
-      setLoading(false)
-      return
-    }
-    api
-      .get('/auth/profile/')
+    refreshAccessToken()
+      .then(() => api.get('/auth/profile/'))
       .then(({ data }) => applyUser(data))
-      .catch(() => {
-        // Token invalid or expired and refresh also failed — clear everything
-        localStorage.removeItem('access')
-        localStorage.removeItem('refresh')
-        setUser(null)
-        setIsSuperuser(false)
-      })
+      .catch(() => clearAuthState())
       .finally(() => setLoading(false))
-  }, [applyUser])
+  }, [applyUser, clearAuthState])
 
   const login = useCallback(async (credentials) => {
-    // POST /api/v1/auth/login/ → { access, refresh }
     const { data } = await api.post('/auth/login/', credentials)
-    localStorage.setItem('access', data.access)
-    localStorage.setItem('refresh', data.refresh)
+    setAccessToken(data.access)
 
-    // Fetch the full user profile after login
     const { data: profile } = await api.get('/auth/profile/')
     return applyUser(profile)
   }, [applyUser])
 
   const logout = useCallback(async () => {
-    const refresh = localStorage.getItem('refresh')
     try {
-      if (refresh) await api.post('/auth/logout/', { refresh })
+      await api.post('/auth/logout/')
     } catch (_) {
-      // Ignore errors — clear local state regardless
+      // Ignore server-side logout failures and clear client state regardless.
     } finally {
-      localStorage.removeItem('access')
-      localStorage.removeItem('refresh')
-      setUser(null)
-      setIsSuperuser(false)
+      clearAuthState()
     }
-  }, [])
+  }, [clearAuthState])
 
   const updateUser = useCallback((updatedUser) => {
     const normalized = {

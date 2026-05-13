@@ -4,6 +4,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from PIL import Image
@@ -14,6 +15,34 @@ from .serializers import MAX_AVATAR_STORED_SIZE, MAX_AVATAR_UPLOAD_SIZE
 
 
 TEST_MEDIA_ROOT = Path(__file__).resolve().parent / "test_media"
+TEST_CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "security-tests",
+    }
+}
+TEST_REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ),
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "1000/min",
+        "user": "1000/min",
+        "auth_login": "2/min",
+        "auth_register": "2/hour",
+        "auth_refresh": "100/min",
+        "community_write": "2/min",
+        "profile_update": "2/min",
+        "webhook": "100/min",
+    },
+}
 
 
 @override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
@@ -120,8 +149,114 @@ class ProfileUploadTests(APITestCase):
         self.assertEqual(settings.MEDIA_URL, "/media/")
         self.assertTrue(hasattr(settings, "SERVE_MEDIA_FILES"))
 
+    def test_production_media_serving_defaults_disabled(self):
+        from config.settings import prod
+
+        self.assertFalse(prod.SERVE_MEDIA_FILES)
+
     @staticmethod
     def image_upload(name, size=(32, 32), color=(255, 255, 255)):
         buffer = BytesIO()
         Image.new("RGB", size, color=color).save(buffer, format="PNG")
         return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")
+
+
+@override_settings(
+    CACHES=TEST_CACHES,
+    REST_FRAMEWORK=TEST_REST_FRAMEWORK,
+    JWT_REFRESH_COOKIE_SECURE=False,
+)
+class CookieAuthSecurityTests(APITestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(username="student", password="pass12345")
+
+    def test_login_sets_httponly_refresh_cookie_without_returning_refresh_token(self):
+        response = self.client.post(
+            "/api/v1/auth/login/",
+            {"username": "student", "password": "pass12345"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+        self.assertNotIn("refresh", response.data)
+        cookie = response.cookies[settings.JWT_REFRESH_COOKIE_NAME]
+        self.assertTrue(cookie["httponly"])
+        self.assertEqual(cookie["samesite"], "Lax")
+
+    def test_refresh_uses_cookie_and_rotates_cookie_value(self):
+        login = self.client.post(
+            "/api/v1/auth/login/",
+            {"username": "student", "password": "pass12345"},
+            format="json",
+        )
+        old_cookie_value = login.cookies[settings.JWT_REFRESH_COOKIE_NAME].value
+        self.client.cookies[settings.JWT_REFRESH_COOKIE_NAME] = old_cookie_value
+
+        response = self.client.post("/api/v1/auth/token/refresh/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+        self.assertNotIn("refresh", response.data)
+        self.assertIn(settings.JWT_REFRESH_COOKIE_NAME, response.cookies)
+        self.assertNotEqual(
+            old_cookie_value,
+            response.cookies[settings.JWT_REFRESH_COOKIE_NAME].value,
+        )
+
+    def test_refresh_rejects_missing_cookie(self):
+        response = self.client.post("/api/v1/auth/token/refresh/")
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_logout_clears_refresh_cookie(self):
+        login = self.client.post(
+            "/api/v1/auth/login/",
+            {"username": "student", "password": "pass12345"},
+            format="json",
+        )
+        self.client.cookies[settings.JWT_REFRESH_COOKIE_NAME] = login.cookies[
+            settings.JWT_REFRESH_COOKIE_NAME
+        ].value
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+
+        response = self.client.post("/api/v1/auth/logout/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.cookies[settings.JWT_REFRESH_COOKIE_NAME].value, "")
+
+    def test_login_is_throttled(self):
+        payload = {"username": "student", "password": "wrong"}
+
+        self.client.post("/api/v1/auth/login/", payload, format="json")
+        self.client.post("/api/v1/auth/login/", payload, format="json")
+        response = self.client.post("/api/v1/auth/login/", payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_register_is_throttled(self):
+        for index in range(2):
+            self.client.post(
+                "/api/v1/auth/register/",
+                {
+                    "username": f"new{index}",
+                    "email": f"new{index}@example.com",
+                    "password": "StrongPass123!",
+                    "password2": "StrongPass123!",
+                },
+                format="json",
+            )
+
+        response = self.client.post(
+            "/api/v1/auth/register/",
+            {
+                "username": "new3",
+                "email": "new3@example.com",
+                "password": "StrongPass123!",
+                "password2": "StrongPass123!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)

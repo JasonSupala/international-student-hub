@@ -1,24 +1,44 @@
-/**
- * api/axios.js — Configured Axios instance
- *
- * - Automatically attaches the JWT access token to every request
- * - On 401 (token expired), silently refreshes and retries the original request
- * - On refresh failure, clears tokens and redirects to /login
- */
-
 import axios from 'axios'
 
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+
+let accessToken = null
+let isRefreshing = false
+let failedQueue = []
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+  baseURL,
+  withCredentials: true,
 })
 
-// ── Request interceptor ──────────────────────────────────────────────────────
-// Attach the access token to every outgoing request
+const authApi = axios.create({
+  baseURL,
+  withCredentials: true,
+})
+
+export function setAccessToken(token) {
+  accessToken = token
+  if (token) {
+    api.defaults.headers.common.Authorization = `Bearer ${token}`
+  } else {
+    delete api.defaults.headers.common.Authorization
+  }
+}
+
+export function clearAccessToken() {
+  setAccessToken(null)
+}
+
+export async function refreshAccessToken() {
+  const { data } = await authApi.post('/auth/token/refresh/')
+  setAccessToken(data.access)
+  return data.access
+}
+
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`
     }
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type']
@@ -27,11 +47,6 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 )
-
-// ── Response interceptor ─────────────────────────────────────────────────────
-// Handle 401 errors by refreshing the token and retrying
-let isRefreshing = false
-let failedQueue = []   // holds requests that came in while a refresh was in progress
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
@@ -49,10 +64,17 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    // Only handle 401 errors that haven't already been retried
+    if (
+      !originalRequest ||
+      originalRequest.url?.includes('/auth/token/refresh/') ||
+      originalRequest.url?.includes('/auth/login/') ||
+      originalRequest.url?.includes('/auth/register/')
+    ) {
+      return Promise.reject(error)
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        // Queue this request until the refresh completes
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
         })
@@ -66,24 +88,10 @@ api.interceptors.response.use(
       originalRequest._retry = true
       isRefreshing = true
 
-      const refreshToken = localStorage.getItem('refresh')
-
-      if (!refreshToken) {
-        // No refresh token — user must log in again
-        clearAuthAndRedirect()
-        return Promise.reject(error)
-      }
-
       try {
-        const { data } = await axios.post('/api/v1/auth/token/refresh/', {
-          refresh: refreshToken,
-        })
-
-        localStorage.setItem('access', data.access)
-        api.defaults.headers.common.Authorization = `Bearer ${data.access}`
-
-        processQueue(null, data.access)
-        originalRequest.headers.Authorization = `Bearer ${data.access}`
+        const token = await refreshAccessToken()
+        processQueue(null, token)
+        originalRequest.headers.Authorization = `Bearer ${token}`
         return api(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError, null)
@@ -99,9 +107,7 @@ api.interceptors.response.use(
 )
 
 function clearAuthAndRedirect() {
-  localStorage.removeItem('access')
-  localStorage.removeItem('refresh')
-  // Redirect to login without using React Router (interceptor is outside component tree)
+  clearAccessToken()
   if (window.location.pathname !== '/login') {
     window.location.href = '/login'
   }

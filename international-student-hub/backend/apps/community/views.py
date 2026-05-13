@@ -5,6 +5,8 @@ community/views.py
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
+from rest_framework.throttling import ScopedRateThrottle
 
 from .models import Post, Reply
 from .serializers import PostSerializer, PostDetailSerializer, ReplySerializer
@@ -36,6 +38,12 @@ class PostViewSet(viewsets.ModelViewSet):
     filterset_fields = ["university"]
     search_fields = ["title", "body"]
     ordering_fields = ["created_at", "upvotes"]
+
+    def get_throttles(self):
+        if self.action in ("create", "update", "partial_update", "destroy", "upvote"):
+            self.throttle_scope = "community_write"
+            return [ScopedRateThrottle()]
+        return [throttle() for throttle in api_settings.DEFAULT_THROTTLE_CLASSES]
 
     def get_queryset(self):
         # Hide soft-deleted posts
@@ -77,6 +85,12 @@ class ReplyViewSet(viewsets.ModelViewSet):
     serializer_class = ReplySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
     filterset_fields = ["post"]
+
+    def get_throttles(self):
+        if self.action in ("create", "update", "partial_update", "destroy", "upvote", "accept"):
+            self.throttle_scope = "community_write"
+            return [ScopedRateThrottle()]
+        return [throttle() for throttle in api_settings.DEFAULT_THROTTLE_CLASSES]
 
     def get_queryset(self):
         return Reply.objects.select_related("author__profile", "post")
