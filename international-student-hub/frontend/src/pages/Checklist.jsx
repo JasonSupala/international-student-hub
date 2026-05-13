@@ -155,9 +155,6 @@ export default function Checklist() {
                       {completedCount}/{cat.items.length}
                     </span>
                   </span>
-                  <span className="checklist-category-tab__arrow" aria-hidden="true">
-                    {isActive ? 'v' : '>'}
-                  </span>
                 </button>
               )
             })}
