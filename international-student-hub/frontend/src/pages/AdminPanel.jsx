@@ -159,6 +159,29 @@ const MODEL_CONFIGS = [
 
 const LOCKED_EDIT_FIELDS = new Set(['id', 'user', 'item', 'category', 'author', 'post'])
 
+const COLUMN_SORT_FIELDS = {
+  'user-profiles': {
+    username: 'user__username',
+  },
+  'checklist-items': {
+    category_name: 'category__name',
+  },
+  'checklist-progress': {
+    username: 'user__username',
+    item_title: 'item__title',
+  },
+  'service-entries': {
+    category_name: 'category__name',
+  },
+  posts: {
+    author_username: 'author__username',
+  },
+  replies: {
+    post_title: 'post__title',
+    author_username: 'author__username',
+  },
+}
+
 function field(name, label, type = 'text', required = false) {
   return { name, label, type, required }
 }
@@ -205,6 +228,10 @@ function renderValue(value) {
   return String(value).length > 80 ? `${String(value).slice(0, 80)}...` : String(value)
 }
 
+function sortFieldFor(model, column) {
+  return COLUMN_SORT_FIELDS[model.key]?.[column] || column
+}
+
 export default function AdminPanel() {
   const [activeKey, setActiveKey] = useState(MODEL_CONFIGS[0].key)
   const activeModel = useMemo(
@@ -219,30 +246,45 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [sort, setSort] = useState({ column: 'id', direction: 'asc' })
 
   useEffect(() => {
     setSelected(null)
     setMode('view')
     setForm(blankRecord(activeModel.fields))
     setSearch('')
+    setSort({ column: 'id', direction: 'asc' })
   }, [activeModel])
 
   useEffect(() => {
     const timer = setTimeout(fetchRecords, 250)
     return () => clearTimeout(timer)
-  }, [activeModel, search])
+  }, [activeModel, search, sort])
 
   async function fetchRecords() {
     setLoading(true)
     setError('')
     try {
-      const { data } = await listAdminRecords(activeModel.endpoint, search)
+      const ordering = sort.direction === 'desc'
+        ? `-${sortFieldFor(activeModel, sort.column)}`
+        : sortFieldFor(activeModel, sort.column)
+      const params = { ordering }
+      if (search) params.search = search
+      const { data } = await listAdminRecords(activeModel.endpoint, params)
       setRecords(data.results || data)
     } catch (err) {
       setError(err.response?.data?.detail || 'Could not load admin records.')
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleSort(column) {
+    setSort((current) => {
+      if (current.column !== column) return { column, direction: 'asc' }
+      if (current.direction === 'asc') return { column, direction: 'desc' }
+      return { column, direction: 'asc' }
+    })
   }
 
   function startCreate() {
@@ -348,7 +390,19 @@ export default function AdminPanel() {
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      {activeModel.columns.map((column) => <th key={column}>{column}</th>)}
+                      {activeModel.columns.map((column) => (
+                        <th key={column}>
+                          <button
+                            type="button"
+                            className={`admin-sort-btn ${sort.column === column ? 'active' : ''}`}
+                            onClick={() => handleSort(column)}
+                            aria-label={`Sort by ${column}`}
+                          >
+                            <span>{column}</span>
+                            <span className={`admin-sort-indicator ${sort.column === column ? sort.direction : ''}`} />
+                          </button>
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>

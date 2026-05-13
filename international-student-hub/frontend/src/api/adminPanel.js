@@ -1,7 +1,6 @@
 import api from './axios'
 
-export function listAdminRecords(endpoint, search = '') {
-  const params = search ? { search } : {}
+export function listAdminRecords(endpoint, params = {}) {
   return api.get(`/admin-panel/${endpoint}/`, { params })
 }
 
