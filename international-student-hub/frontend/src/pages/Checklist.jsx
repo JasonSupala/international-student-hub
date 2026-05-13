@@ -8,12 +8,24 @@ export default function Checklist() {
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null)
   // Track which items are being toggled (to disable button during API call)
   const [toggling, setToggling] = useState(new Set())
 
   useEffect(() => {
     fetchData()
   }, [])
+
+  useEffect(() => {
+    if (!categories.length) {
+      setSelectedCategoryId(null)
+      return
+    }
+
+    if (!categories.some((cat) => cat.id === selectedCategoryId)) {
+      setSelectedCategoryId(categories[0].id)
+    }
+  }, [categories, selectedCategoryId])
 
   async function fetchData() {
     setLoading(true)
@@ -76,6 +88,8 @@ export default function Checklist() {
 
   if (loading) return <div className="loading-center"><div className="spinner" /></div>
 
+  const selectedCategory = categories.find((cat) => cat.id === selectedCategoryId) || categories[0]
+
   return (
     <div className="checklist-page page">
       <div className="page-header">
@@ -120,7 +134,36 @@ export default function Checklist() {
             <p>An admin needs to add checklist items via the Django admin.</p>
           </div>
         ) : (
-          categories.map((cat, i) => (
+          <>
+          <div className="checklist-category-selector fade-up fade-up-1" aria-label="Checklist categories">
+            {categories.map((cat) => {
+              const isActive = cat.id === selectedCategory.id
+              const completedCount = cat.items.filter((i) => i.completed).length
+
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  className={`checklist-category-tab ${isActive ? 'checklist-category-tab--active' : ''}`}
+                  onClick={() => setSelectedCategoryId(cat.id)}
+                  aria-pressed={isActive}
+                >
+                  <span className="checklist-category-tab__icon">{cat.icon || '*'}</span>
+                  <span className="checklist-category-tab__body">
+                    <span className="checklist-category-tab__name">{cat.name}</span>
+                    <span className="checklist-category-tab__count">
+                      {completedCount}/{cat.items.length}
+                    </span>
+                  </span>
+                  <span className="checklist-category-tab__arrow" aria-hidden="true">
+                    {isActive ? 'v' : '>'}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {[selectedCategory].map((cat, i) => (
             <div key={cat.id} className={`checklist-category fade-up fade-up-${Math.min(i + 1, 5)}`}>
               <div className="checklist-category__header">
                 <span className="checklist-category__icon">{cat.icon || '📌'}</span>
@@ -176,7 +219,8 @@ export default function Checklist() {
                 ))}
               </div>
             </div>
-          ))
+          ))}
+          </>
         )}
       </div>
     </div>
