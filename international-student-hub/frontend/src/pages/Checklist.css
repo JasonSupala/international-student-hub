@@ -74,15 +74,15 @@
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: all var(--transition);
-  clip-path: polygon(18px 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 18px 100%, 0 50%);
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%);
   margin-right: -16px;
   position: relative;
 }
 
 .checklist-category-tab:hover {
   border-color: var(--red);
-  background: var(--cream);
+  background: #fde8e5;
   z-index: 1;
 }
 
@@ -91,6 +91,11 @@
   border-color: var(--navy);
   color: var(--white);
   z-index: 2;
+}
+
+.checklist-category-tab--active:hover {
+  background: var(--navy-light);
+  border-color: var(--navy-light);
 }
 
 .checklist-category-tab__icon {
@@ -132,7 +137,7 @@
     padding-right: 24px;
     padding-left: 24px;
     margin-right: -12px;
-    clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%);
   }
 }
 
